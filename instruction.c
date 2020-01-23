@@ -181,6 +181,7 @@ int fetchInstruction(machine_state_t *state, y86_instruction_t *instr) {
         printErrorShortInstruction(stdout, instr);
         return 0;
       };
+      instr->rB = rB;
       instr->valP=pc+10;
       printf("Final value of valC after puting it in instruction->valC  %"PRIx64"\n\n", instr->valC);
       printf("next instruction address valP is %"PRIx64"\n", instr->valP);

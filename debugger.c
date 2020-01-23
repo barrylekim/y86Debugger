@@ -33,6 +33,7 @@ struct Node
 
 struct LinkedList {
   struct Node *head;
+  struct Node *tail;
   int size;
 };
 
@@ -118,6 +119,7 @@ int main(int argc, char **argv) {
 
   breakpoints = malloc(sizeof(struct LinkedList));
   breakpoints->head = NULL;
+  breakpoints->tail = NULL;
   breakpoints->size = 0;
   
   while(1) {
@@ -162,88 +164,106 @@ int main(int argc, char **argv) {
     /* THIS PART TO BE COMPLETED BY THE STUDENT */
     // Check what command is inputed
     if (!strcasecmp(command, "quit") || !strcasecmp(command, "exit")) {
-      // Free all resources and exit program
-      break;
-    } else if (!strcasecmp(command, "step")) {
-      if (executeInstruction(&state, &nextInstruction) && fetchInstruction(&state, &nextInstruction)) {
-        printInstruction(stdout, &nextInstruction);
+      if (parameters != NULL) {
+        printErrorCommandTooLong(stdout);
       } else {
-        if (nextInstruction.icode == I_INVALID) {
-          printErrorInvalidInstruction(stdout,&nextInstruction);
-        } else if (nextInstruction.icode == I_TOO_SHORT) {
-          printErrorShortInstruction(stdout, &nextInstruction);
-        } else {
+        // Free all resources and exit program
+        break;
+      }
+    } else if (!strcasecmp(command, "step")) {
+      if (parameters != NULL) {
+        printErrorCommandTooLong(stdout);
+      } else {
+        if (executeInstruction(&state, &nextInstruction) && fetchInstruction(&state, &nextInstruction)) {
           printInstruction(stdout, &nextInstruction);
+        } else {
+          if (nextInstruction.icode == I_INVALID) {
+            printErrorInvalidInstruction(stdout,&nextInstruction);
+          } else if (nextInstruction.icode == I_TOO_SHORT) {
+            printErrorShortInstruction(stdout, &nextInstruction);
+          } else {
+            printInstruction(stdout, &nextInstruction);
+          }
         }
       }
     } else if (!strcasecmp(command, "run")) {
-      /*while (!hasBreakpoint(state.programCounter) && executeInstruction(&state, &nextInstruction) && fetchInstruction(&state, &nextInstruction)) {
-      }
-      if (nextInstruction.icode == 16) {
-        printErrorInvalidInstruction(stdout,&nextInstruction);
-      } else if (nextInstruction.icode == 17) {
-        printErrorShortInstruction(stdout, &nextInstruction);
+      if (parameters != NULL) {
+        printErrorCommandTooLong(stdout);
       } else {
-        executeInstruction(&state, &nextInstruction);
-        fetchInstruction(&state, &nextInstruction);
-        
-        printInstruction(stdout, &nextInstruction);
-      }*/
-    } else if (!strcasecmp(command, "next")) {
-      if (nextInstruction.icode == 8 && nextInstruction.ifun == 0) {
-        uint64_t origrsp = state.registerFile[4];
-        while (!hasBreakpoint(state.programCounter) && executeInstruction(&state, &nextInstruction) && fetchInstruction(&state, &nextInstruction)&& origrsp != state.registerFile[4]) {
-        }
-          if (nextInstruction.icode == 16) {
-            printErrorInvalidInstruction(stdout,&nextInstruction);
-          } else if (nextInstruction.icode == 17) {
-            printErrorShortInstruction(stdout, &nextInstruction);
-          } else {
-            executeInstruction(&state, &nextInstruction);
-            fetchInstruction(&state, &nextInstruction);
-            printInstruction(stdout, &nextInstruction);
-          }
-      } else {
-          if (executeInstruction(&state, &nextInstruction) && fetchInstruction(&state, &nextInstruction)) {
-            printInstruction(stdout, &nextInstruction);
-          } else {
-            if (nextInstruction.icode == 16) {
+        while (!hasBreakpoint(state.programCounter)) {
+          int fetch = fetchInstruction(&state, &nextInstruction);
+          if (fetch == 0) {
+            if (nextInstruction.icode == I_INVALID) {
               printErrorInvalidInstruction(stdout,&nextInstruction);
-            } else if (nextInstruction.icode == 17) {
+            } else if (nextInstruction.icode == I_TOO_SHORT) {
               printErrorShortInstruction(stdout, &nextInstruction);
+            }
+            break;
+          } else {
+            int exec = executeInstruction(&state, &nextInstruction);
+            if (exec == 0) {
+              /*TODO*/
+              break;
             } else {
               printInstruction(stdout, &nextInstruction);
             }
           }
+        }
+      }
+    } else if (!strcasecmp(command, "next")) {
+      if (parameters != NULL) {
+        printErrorCommandTooLong(stdout);
+      } else {
+        /*TODO*/
+      }
+    } else if (!strcasecmp(command, "jump")) {
+      printf("%d\n", isNumber(parameters));
+      if (parameters == NULL || !(isNumber(parameters))) {
+        printErrorInvalidCommand(stdout, command, parameters);
+      } else {
+        state.programCounter = (uint64_t) atoi(parameters);
+        if (!fetchInstruction(&state, &nextInstruction)) {
+          printErrorInvalidInstruction(stdout, &nextInstruction);
+        } else {
+          printInstruction(stdout, &nextInstruction);
+        }
       }
     } else if (!strcasecmp(command, "break")) {
-      if (parameters != NULL) {
-        addBreakpoint((unsigned int) atoi(parameters));
+      if (parameters == NULL || !(isNumber(parameters))) {
+        printErrorInvalidCommand(stdout, command, parameters);
+      } else {
+        addBreakpoint((uint64_t) atoi(parameters));
       }
     } else if (!strcasecmp(command, "delete")) {
-      if (parameters != NULL) {
-        deleteBreakpoint((unsigned int) atoi(parameters));
+      if (parameters == NULL || !(isNumber(parameters))) {
+        printErrorInvalidCommand(stdout, command, parameters);
+      } else {
+        deleteBreakpoint((uint64_t) atoi(parameters));
+      }
+    } else if (!strcasecmp(command, "examine")) {
+      if (parameters == NULL || !(isNumber(parameters))) {
+        printErrorInvalidCommand(stdout, command, parameters);
+      } else {
+        printMemoryValueQuad(stdout, &state, (uint64_t) atoi(parameters));
       }
     } else if (!strcasecmp(command, "registers")) {
       int reg_num = 0;
       while (reg_num < 15) {
         printRegisterValue(stdout, &state, (y86_register_t) reg_num);
       }
-    } else if (!strcasecmp(command, "jump")) {
-      if (parameters != NULL) {
-        state.programCounter = (unsigned int) atoi(parameters);
-        fetchInstruction(&state, &nextInstruction);
-        printInstruction(stdout, &nextInstruction);
+    } else if (!strcasecmp(command, "listbreaks")) {
+      struct Node *curr = breakpoints->head;
+      while (curr != NULL) {
+        printf("%d\n", curr->data);
+        curr = curr->next;
       }
-    } else if (!strcasecmp(command, "examine")) {
-      unsigned int addr = (unsigned int) atoi(parameters);
-      printMemoryValueQuad(stdout, &state, addr);
     } else {
-      printf("ERR: Command '%s' not supported.\n", command);
+      printErrorInvalidCommand(stdout, command, parameters);
     }
   }
   
   deleteAllBreakpoints();
+  free(breakpoints);
   munmap(state.programMap, state.programSize);
   close(fd);
   return SUCCESS;
@@ -252,21 +272,20 @@ int main(int argc, char **argv) {
 /* Adds an address to the list of breakpoints. If the address is
  * already in the list, it is not added again. */
 static void addBreakpoint(uint64_t address) {
-
-  /* THIS PART TO BE COMPLETED BY THE STUDENT */
     if (!hasBreakpoint(address)) {
     struct Node *node = malloc(sizeof(struct Node));
     node->data = address;
+    node->next = NULL;
 
     if (breakpoints->size != 0) {
       // Add to existing list
-      node->next = breakpoints->head;
-      breakpoints->head = node;
+      breakpoints->tail->next = node;
+      breakpoints->tail = node;
       breakpoints->size++;
     } else {
       // Empty list
-      node->next = NULL;
       breakpoints->head = node;
+      breakpoints->tail = node;
       breakpoints->size++;
     } 
   }
@@ -275,17 +294,25 @@ static void addBreakpoint(uint64_t address) {
 /* Deletes an address from the list of breakpoints. If the address is
  * not in the list, nothing happens. */
 static void deleteBreakpoint(uint64_t address) {
-
-  /* THIS PART TO BE COMPLETED BY THE STUDENT */
   struct Node *curr = breakpoints->head;
   struct Node *prev;
   
+  if (curr->data == address) {
+    breakpoints->head = curr->next;
+    breakpoints->size--;
+    free(curr);
+    return;
+  }
+
   // Search list and delete
   while (curr != NULL) {
     if (curr->data == address) {
       prev->next = curr->next;
-      free(curr);
       breakpoints->size--;
+      if (breakpoints->tail == curr) {
+        breakpoints->tail = prev;
+      }
+      free(curr);
       return;
     } else {
       prev = curr;
@@ -296,8 +323,6 @@ static void deleteBreakpoint(uint64_t address) {
 
 /* Deletes and frees all breakpoints. */
 static void deleteAllBreakpoints(void) {
-
-  /* THIS PART TO BE COMPLETED BY THE STUDENT */
   if (breakpoints->head != NULL) {
     // Free the list
     struct Node *curr = breakpoints->head;
@@ -313,7 +338,6 @@ static void deleteAllBreakpoints(void) {
 /* Returns true (non-zero) if the address corresponds to a breakpoint
  * in the list of breakpoints, or false (zero) otherwise. */
 static int hasBreakpoint(uint64_t address) {
-  /* THIS PART TO BE COMPLETED BY THE STUDENT */
   if (breakpoints->size == 0) {
     return 0;
   } else {
@@ -327,4 +351,13 @@ static int hasBreakpoint(uint64_t address) {
     }
     return 0;
   }
+}
+
+int isNumber(char *str) {
+  for (int i = 0; i < strlen(str); i++) {
+    if (!isdigit(str[i])) {
+      return 0;
+    }
+  }
+  return 1;
 }
