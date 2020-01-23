@@ -181,7 +181,7 @@ int main(int argc, char **argv) {
             printErrorInvalidInstruction(stdout,&nextInstruction);
           } else if (nextInstruction.icode == I_TOO_SHORT) {
             printErrorShortInstruction(stdout, &nextInstruction);
-          } else {
+          } else if (nextInstruction.icode == I_HALT) {
             printInstruction(stdout, &nextInstruction);
           }
         }
@@ -190,19 +190,26 @@ int main(int argc, char **argv) {
       if (parameters != NULL) {
         printErrorCommandTooLong(stdout);
       } else {
-        while (!hasBreakpoint(state.programCounter)) {
-          int fetch = fetchInstruction(&state, &nextInstruction);
-          if (fetch == 0) {
-            if (nextInstruction.icode == I_INVALID) {
-              printErrorInvalidInstruction(stdout,&nextInstruction);
-            } else if (nextInstruction.icode == I_TOO_SHORT) {
-              printErrorShortInstruction(stdout, &nextInstruction);
-            }
+        while (!hasBreakpoint(state.programCounter)) { 
+          // Execute
+          int exec = executeInstruction(&state, &nextInstruction);
+          if (exec == 0) {
+            // Print error if invalid
+            printErrorInvalidInstruction(stdout, &nextInstruction);
             break;
           } else {
-            int exec = executeInstruction(&state, &nextInstruction);
-            if (exec == 0) {
-              /*TODO*/
+            // Fetch next instruction
+            int fetch = fetchInstruction(&state, &nextInstruction);
+            // Check if valid
+            if (fetch == 0) {
+              if (nextInstruction.icode == I_INVALID) {
+                printErrorInvalidInstruction(stdout,&nextInstruction);
+              } else if (nextInstruction.icode == I_TOO_SHORT) {
+                printErrorShortInstruction(stdout, &nextInstruction);
+              } else if (nextInstruction.icode == I_HALT) {
+                printInstruction(stdout, &nextInstruction);
+                break;
+              }
               break;
             } else {
               printInstruction(stdout, &nextInstruction);
@@ -214,16 +221,26 @@ int main(int argc, char **argv) {
       if (parameters != NULL) {
         printErrorCommandTooLong(stdout);
       } else {
-        /*TODO*/
+        if (nextInstruction.icode == I_CALL) {
+
+        } else {
+
+        }
       }
     } else if (!strcasecmp(command, "jump")) {
       printf("%d\n", isNumber(parameters));
       if (parameters == NULL || !(isNumber(parameters))) {
         printErrorInvalidCommand(stdout, command, parameters);
       } else {
+        // Change PC to given address
         state.programCounter = (uint64_t) atoi(parameters);
+        // Check if valid
         if (!fetchInstruction(&state, &nextInstruction)) {
-          printErrorInvalidInstruction(stdout, &nextInstruction);
+          if (nextInstruction.icode == I_HALT) {
+            printInstruction(stdout, &nextInstruction);
+          } else {
+            printErrorInvalidInstruction(stdout, &nextInstruction);
+          }
         } else {
           printInstruction(stdout, &nextInstruction);
         }
@@ -244,9 +261,11 @@ int main(int argc, char **argv) {
       if (parameters == NULL || !(isNumber(parameters))) {
         printErrorInvalidCommand(stdout, command, parameters);
       } else {
+        // Print memmory at given location
         printMemoryValueQuad(stdout, &state, (uint64_t) atoi(parameters));
       }
     } else if (!strcasecmp(command, "registers")) {
+      // Loop through registers and print
       int reg_num = 0;
       while (reg_num < 15) {
         printRegisterValue(stdout, &state, (y86_register_t) reg_num);
