@@ -223,7 +223,19 @@ int main(int argc, char **argv) {
       } else {
         if (nextInstruction.icode == I_CALL) {
           // Remember stack pointer
-          int sp = state.registerFile[R_RSP];
+          int sp = NULL;
+          if (executeInstruction(&state, &nextInstruction) && fetchInstruction(&state, &nextInstruction)) {
+            sp = state.registerFile[R_RSP];
+            printInstruction(stdout, &nextInstruction);
+          } else {
+            if (nextInstruction.icode == I_INVALID) {
+              printErrorInvalidInstruction(stdout,&nextInstruction);
+            } else if (nextInstruction.icode == I_TOO_SHORT) {
+              printErrorShortInstruction(stdout, &nextInstruction);
+            } else if (nextInstruction.icode == I_HALT) {
+              printInstruction(stdout, &nextInstruction);
+            }
+          }
           while (!hasBreakpoint(state.programCounter)) { 
             // Execute
             int exec = executeInstruction(&state, &nextInstruction);
@@ -232,7 +244,7 @@ int main(int argc, char **argv) {
               printErrorInvalidInstruction(stdout, &nextInstruction);
               break;
             } else {
-              if (sp == state.registerFile[R_RSP]) {
+              if (sp && sp == state.registerFile[R_RSP]) {
                 // Returned, stop execution
                 break;
               }

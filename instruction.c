@@ -68,7 +68,7 @@ int memWriteByte(machine_state_t *state,  uint64_t address, uint8_t value) {
 int memWriteQuadLE(machine_state_t *state, uint64_t address, uint64_t value) {
 
   /* THIS PART TO BE COMPLETED BY THE STUDENT */
-  if (address + 7 > state->programSize){
+  if (address + 7 >= state->programSize){
     printf("memWriteQuadLE failed because address %"PRIx64" is larger than memory size\n", address);
     printf("print memory size %"PRIx64"\n", state->programSize);
     return 0;
@@ -498,10 +498,21 @@ int executeInstruction(machine_state_t *state, y86_instruction_t *instr) {
     }
     case I_PUSHQ:
     {
+      /*
+       (*state).registerFile[4] = (*state).registerFile[4] - 8;
+      if (memWriteQuadLE(state, (*state).registerFile[4], (*state).registerFile[instr->rA]) == 0) {
+        printErrorInvalidMemoryLocation(stdout, instr, (*state).registerFile[4]);
+        state->programCounter = instr->valP;
+        return 0;
+      } else {
+        state->programCounter = instr->valP;
+        return 1;
+      }
+      */
       uint64_t valA = state->registerFile[instr->rA]; //Content of register rA to be pushed on the stack
       uint64_t valRsp = state->registerFile[4]; //Address that the stack pointer is pointing at
-      if(!memWriteQuadLE(state, valRsp - 0x8, valA)){
-        printErrorInvalidMemoryLocation(stdout, instr, valRsp - 0x8);
+      if(!memWriteQuadLE(state, valRsp - 8, valA)){
+        printErrorInvalidMemoryLocation(stdout, instr, valRsp - 8);
         return 0;
       };
       state->registerFile[4] = valRsp - 8; //Updating the stack pointer
