@@ -250,6 +250,7 @@ int main(int argc, char **argv) {
       int reg_num = 0;
       while (reg_num < 15) {
         printRegisterValue(stdout, &state, (y86_register_t) reg_num);
+        reg_num++;
       }
     } else if (!strcasecmp(command, "listbreaks")) {
       struct Node *curr = breakpoints->head;
