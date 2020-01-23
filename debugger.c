@@ -177,11 +177,7 @@ int main(int argc, char **argv) {
         }
       }
     } else if (!strcasecmp(command, "run")) {
-      /*while (fetchInstruction(&state, &nextInstruction) && ())
-      {
-      }*/
-      
-      while (!hasBreakpoint(state.programCounter) && executeInstruction(&state, &nextInstruction) && fetchInstruction(&state, &nextInstruction)) {
+      /*while (!hasBreakpoint(state.programCounter) && executeInstruction(&state, &nextInstruction) && fetchInstruction(&state, &nextInstruction)) {
       }
       if (nextInstruction.icode == 16) {
         printErrorInvalidInstruction(stdout,&nextInstruction);
@@ -192,7 +188,7 @@ int main(int argc, char **argv) {
         fetchInstruction(&state, &nextInstruction);
         
         printInstruction(stdout, &nextInstruction);
-      }
+      }*/
     } else if (!strcasecmp(command, "next")) {
       if (nextInstruction.icode == 8 && nextInstruction.ifun == 0) {
         uint64_t origrsp = state.registerFile[4];
@@ -246,7 +242,7 @@ int main(int argc, char **argv) {
       printf("ERR: Command '%s' not supported.\n", command);
     }
   }
-
+  
   deleteAllBreakpoints();
   munmap(state.programMap, state.programSize);
   close(fd);
