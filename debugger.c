@@ -222,9 +222,51 @@ int main(int argc, char **argv) {
         printErrorCommandTooLong(stdout);
       } else {
         if (nextInstruction.icode == I_CALL) {
-
+          // Remember stack pointer
+          int sp = state.registerFile[R_RSP];
+          while (!hasBreakpoint(state.programCounter)) { 
+            // Execute
+            int exec = executeInstruction(&state, &nextInstruction);
+            if (exec == 0) {
+              // Print error if invalid
+              printErrorInvalidInstruction(stdout, &nextInstruction);
+              break;
+            } else {
+              if (sp == state.registerFile[R_RSP]) {
+                // Returned, stop execution
+                break;
+              }
+              // Fetch next instruction
+              int fetch = fetchInstruction(&state, &nextInstruction);
+              // Check if valid
+              if (fetch == 0) {
+                if (nextInstruction.icode == I_INVALID) {
+                  printErrorInvalidInstruction(stdout,&nextInstruction);
+                } else if (nextInstruction.icode == I_TOO_SHORT) {
+                  printErrorShortInstruction(stdout, &nextInstruction);
+                } else if (nextInstruction.icode == I_HALT) {
+                  printInstruction(stdout, &nextInstruction);
+                  break;
+                }
+                break;
+              } else {
+                printInstruction(stdout, &nextInstruction);
+              }
+            }
+          }
         } else {
-
+          // Same as step if not CALL
+          if (executeInstruction(&state, &nextInstruction) && fetchInstruction(&state, &nextInstruction)) {
+            printInstruction(stdout, &nextInstruction);
+          } else {
+            if (nextInstruction.icode == I_INVALID) {
+              printErrorInvalidInstruction(stdout,&nextInstruction);
+            } else if (nextInstruction.icode == I_TOO_SHORT) {
+              printErrorShortInstruction(stdout, &nextInstruction);
+            } else if (nextInstruction.icode == I_HALT) {
+              printInstruction(stdout, &nextInstruction);
+            }
+          }
         }
       }
     } else if (!strcasecmp(command, "jump")) {
