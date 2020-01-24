@@ -223,19 +223,7 @@ int main(int argc, char **argv) {
       } else {
         if (nextInstruction.icode == I_CALL) {
           // Remember stack pointer
-          int sp = NULL;
-          if (executeInstruction(&state, &nextInstruction) && fetchInstruction(&state, &nextInstruction)) {
-            sp = state.registerFile[R_RSP];
-            printInstruction(stdout, &nextInstruction);
-          } else {
-            if (nextInstruction.icode == I_INVALID) {
-              printErrorInvalidInstruction(stdout,&nextInstruction);
-            } else if (nextInstruction.icode == I_TOO_SHORT) {
-              printErrorShortInstruction(stdout, &nextInstruction);
-            } else if (nextInstruction.icode == I_HALT) {
-              printInstruction(stdout, &nextInstruction);
-            }
-          }
+          uint64_t sp = NULL;
           while (!hasBreakpoint(state.programCounter)) { 
             // Execute
             int exec = executeInstruction(&state, &nextInstruction);
@@ -244,9 +232,9 @@ int main(int argc, char **argv) {
               printErrorInvalidInstruction(stdout, &nextInstruction);
               break;
             } else {
-              if (sp && sp == state.registerFile[R_RSP]) {
-                // Returned, stop execution
-                break;
+              if (nextInstruction.icode == I_CALL) {
+                memReadQuadLE(&state, state.registerFile[R_RSP], &sp);
+                printf("sp: %llu \n", sp);
               }
               // Fetch next instruction
               int fetch = fetchInstruction(&state, &nextInstruction);
@@ -263,6 +251,10 @@ int main(int argc, char **argv) {
                 break;
               } else {
                 printInstruction(stdout, &nextInstruction);
+              }
+              if (sp && state.programCounter == sp) {
+                // Returned, stop execution
+                break;
               }
             }
           }
