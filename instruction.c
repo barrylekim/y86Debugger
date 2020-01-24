@@ -97,7 +97,7 @@ int fetchInstruction(machine_state_t *state, y86_instruction_t *instr) {
     // Address bigger than memory size
     return 0;
   };
-  printf("Start of Fetch!!!!!!!!!!!!!!!!!!");
+  printf("Start of Fetch!!!!!!!!!!!!!!!!!!\n");
   printf("PC is now at %"PRIx64"\n", pc);
   printf("At that address the map points to  %"PRIx64"\n", instrAtPc);
   uint8_t icode = instrAtPc >> 4;
@@ -459,15 +459,15 @@ int executeInstruction(machine_state_t *state, y86_instruction_t *instr) {
       if (valE == 0){
         state->conditionCodes = state->conditionCodes | CC_ZERO_MASK;
       } else {
-        state->conditionCodes = state->conditionCodes & CC_ZERO_MASK;
+        state->conditionCodes = state->conditionCodes & 0xFE;
       }
 
       if (valE < 0){
         state->conditionCodes = state->conditionCodes | CC_SIGN_MASK;
       } else {
-        state->conditionCodes = state->conditionCodes & CC_SIGN_MASK;
+        state->conditionCodes = state->conditionCodes & 0xFD;
       }
-
+      
       state->registerFile[instr->rB] = valE;
       state->programCounter = instr->valP;
       break;
